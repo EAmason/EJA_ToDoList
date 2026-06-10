@@ -65,3 +65,14 @@ Task Tracker defaults to the time zone you are logging in from. It will note tha
 ## Assumptions
 
 If this were to be moved to a Production environment, a server would need to be available so that both the frontend and the backend can be left up and running at all times. Additionally, a URL would need to be provided for users to access.
+
+## My Thought Process
+
+My thought process behind Task Tracker was to get an application that was functional for its intended purpose. As a take home assignment with limited time available, the goal was to provide a working application that could be easily updated with additional features. However, it still needed to fulfill its purpose of being a task tracker. The user needed to be able to do the following:
+
+1. Create an Account
+2. Login
+3. Create/Edit/Delete Tasks
+4. Look at your tasks.
+
+So, I focused on providing those in this application. With the provided application serving as a base, making changes (adding or removing task categories in the dashboard, adding additional properties to tasks, adding new features) should be much easier than starting from scratch. The frontend is intentionally bare-boned (but functional). It is usable, and it should be simple to add desired changes (company logo, more colors, move elements around, etc.). Finally, unit tests were added to ensure that we can ensure future changes don't break existing functionality.
