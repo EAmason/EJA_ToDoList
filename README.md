@@ -3,17 +3,18 @@ Welcome to Task Tracker, a simple application for tracking your to-do list. Plea
 
 ## Before Running
 Note: These instructions should only need to be run once.
-1. Install Node.js.
-2. Next, if you have the default Windows Execution Policy, you will need to set it to RemoteSigned for atleast your user. To set it globally, run Set-ExecutionPolicy RemoteSigned in an Admin PowerShell.
-3. Open PowerShell and navigate to your local copy of the repository.
-4. Navigiate to the folder 'to-do-list-frontend'.
-5. Run the command 'npm install'.
-6. Run the command 'npm install react-router-dom'.
-7. Install .NET 10.
-8. Open a Command Prompt and navigate to your local copy of the repository.
-9. Navigate to the folder 'to-do-list-backend'.
-10. Run the command 'dotnet tool restore'.
-11. RUn the command 'dotnet ef database update'.
+1. Clone the repository in a location of your choice.
+2. Install Node.js.
+3. Next, if you have the default Windows Execution Policy, you will need to set it to RemoteSigned for atleast your user. To set it globally, run Set-ExecutionPolicy RemoteSigned in an Admin PowerShell.
+4. Open PowerShell and navigate to your local copy of the repository.
+5. Navigiate to the folder 'to-do-list-frontend'.
+6. Run the command 'npm install'.
+7. Run the command 'npm install react-router-dom'.
+8. Install .NET 10.
+9. Open a Command Prompt and navigate to your local copy of the repository.
+10. Navigate to the folder 'to-do-list-backend'.
+11. Run the command 'dotnet tool restore'.
+12. RUn the command 'dotnet ef database update'.
 
 ## Instructions to Run
 Note: The following instructions apply to Windows PC's.
