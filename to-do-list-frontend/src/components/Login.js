@@ -38,6 +38,10 @@ function Login() {
                 localStorage.setItem('token', data.token);
             }
 
+            if (data.user && data.user.id) {
+                localStorage.setItem('userId', String(data.user.id));
+            }
+
             navigate('/dashboard');
         } catch (err) {
             setError('Could not connect to server. Please try again.');

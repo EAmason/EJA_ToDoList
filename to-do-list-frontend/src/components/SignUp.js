@@ -4,12 +4,12 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import './SignUp.css';
 
 function SignUp() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -18,8 +18,8 @@ function SignUp() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError('');
-        if (!email || !password) {
-            setError('Please enter both your email address and your password.');
+        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+            setError('Please fill in all fields.');
             return;
         }
         if (password !== confirmPassword) {
@@ -27,14 +27,12 @@ function SignUp() {
             return;
         }
 
-        // TODO: Add additional client-side validation.
-
         setLoading(true);
         try {
             const res = await fetch(`${API_BASE}/api/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ firstName, lastName, email, password }),
+                body: JSON.stringify({ firstName, lastName, email, password, confirmPassword }),
             });
 
             const data = await res.json();

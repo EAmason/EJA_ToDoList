@@ -27,15 +27,27 @@ namespace ToDoListBackend.Controllers
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            // Check that all fields are filled in
+            if (
+                string.IsNullOrWhiteSpace(request.FirstName) ||
+                string.IsNullOrWhiteSpace(request.LastName) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.ConfirmPassword))
             {
-                return BadRequest(new { error = "Email and password required" });
+                return BadRequest(new { error = "All fields are required" });
+            }
+
+            // Check that that the password and confirm password fields match
+            if (request.Password != request.ConfirmPassword)
+            {
+                return BadRequest(new { error = "Passwords do not match" });
             }
 
             // Check if email already exists
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                return BadRequest(new { error = "Email already exists" });
+                return BadRequest(new { error = "Email address already used by another user account" });
             }
 
             try
@@ -63,7 +75,9 @@ namespace ToDoListBackend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            if (
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password))
             {
                 return BadRequest(new { error = "Email and password required" });
             }
@@ -115,6 +129,7 @@ namespace ToDoListBackend.Controllers
         public string LastName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
     }
 
     public class LoginRequest
