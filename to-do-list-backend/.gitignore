@@ -3,5 +3,6 @@
 # generated files
 /bin
 /obj
+*.db
 *.db-shm
 *.db-wal
