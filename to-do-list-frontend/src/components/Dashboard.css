@@ -60,6 +60,17 @@
   border-radius: 12px;
 }
 
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-toggle {
+  padding: 0;
+  font-size: 0.85rem;
+}
+
 .task-list {
   list-style: none;
   padding: 0;
@@ -75,6 +86,30 @@
   font-size: 14px;
 }
 
+.task-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.task-right-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.task-priority {
+  color: #495057;
+  background-color: #e9ecef;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .task-item:last-child {
   border-bottom: none;
 }
@@ -82,7 +117,11 @@
 .task-title {
   color: #333;
   font-weight: 500;
-  flex: 1;
+  flex: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-date {

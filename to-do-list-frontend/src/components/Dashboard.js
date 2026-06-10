@@ -11,6 +11,11 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState({
+    upcomingReminders: true,
+    remaining: true,
+    recentlyCompleted: true,
+  });
   const [now, setNow] = useState(new Date());
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -94,10 +99,7 @@ function Dashboard() {
 
     const overdue = allTasks.filter(t => t.dueDate && t.dueDate < nowUtc && t.status !== 'Completed')
       .sort((a, b) => a.dueDate - b.dueDate); // earliest past first -> furthest in past first
-
-    // Reverse to get furthest in the past first.
-    overdue.reverse();
-
+      
     const dueSoon = allTasks.filter(t => t.dueDate && t.dueDate > nowUtc && t.dueDate <= inOneWeek && !(t.priority === 'Reminder'))
       .sort((a, b) => a.dueDate - b.dueDate);
 
@@ -119,7 +121,64 @@ function Dashboard() {
 
   const groups = categorize(tasks);
 
-  const displayDate = (d) => d ? new Date(d).toLocaleString() : '';
+  const isCollapsed = (section) => collapsedSections[section] ?? false;
+  const toggleSection = (section) => setCollapsedSections((prev) => ({
+    ...prev,
+    [section]: !isCollapsed(section)
+  }));
+
+  const displayDate = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    const offsetMs = dt.getTimezoneOffset() * 60000;
+    const local = new Date(dt.getTime() - offsetMs);
+    return local.toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+  };
+
+  const formatPriority = (p) => {
+    if (!p) return '';
+    switch (p) {
+      case 'LowPriority':
+        return 'Low Priority';
+      case 'MediumPriority':
+        return 'Medium Priority';
+      case 'HighPriority':
+        return 'High Priority';
+      default:
+        return p;
+    }
+  };
+
+  const formatStatus = (s) => {
+    if (!s) return '';
+    switch (s) {
+      case 'NotStarted':
+        return 'Not Started';
+      case 'InProgress':
+        return 'In-Progress';
+      case 'Completed':
+        return 'Completed';
+      default:
+        return s;
+    }
+  };
+
+  const formatHoursRemaining = (h) => {
+    if (h == null) {
+      return '';
+    }
+    else {
+       return `${h} hours remaining`;
+    }
+  };
+
+  const formatDateTimeLocal = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const offsetMs = d.getTimezoneOffset() * 60000;
+    const localDate = new Date(d.getTime() - offsetMs);
+    return localDate.toISOString().slice(0, 16);
+  };
 
   const timeRemainingText = (due) => {
     if (!due) return '';
@@ -159,6 +218,11 @@ function Dashboard() {
     if (!selectedTask) return;
     setErrorMsg(null);
     const userId = localStorage.getItem('userId');
+    // For new tasks, default HoursRemaining to EstimateHours if not provided
+    let hoursRemainingValue = selectedTask.hoursRemaining;
+    if (selectedTask.id == null && (hoursRemainingValue == null) && selectedTask.estimateHours != null) {
+      hoursRemainingValue = selectedTask.estimateHours;
+    }
     const payload = {
       UserId: userId ? parseInt(userId, 10) : undefined,
       Name: selectedTask.name,
@@ -166,7 +230,7 @@ function Dashboard() {
       DueDate: selectedTask.dueDate ? new Date(selectedTask.dueDate).toISOString() : null,
       Priority: selectedTask.priority,
       EstimateHours: selectedTask.estimateHours,
-      HoursRemaining: selectedTask.hoursRemaining,
+      HoursRemaining: hoursRemainingValue,
       Status: selectedTask.status
     };
 
@@ -268,21 +332,33 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Today's Reminders</Card.Title>
-                <span className="task-count">{groups.todaysReminders.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.todaysReminders.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('todaysReminders')}>
+                    {isCollapsed('todaysReminders') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('todaysReminders') && (
+                <Card.Body>
                 {groups.todaysReminders.length > 0 ? (
                   <ul className="task-list">
                     {groups.todaysReminders.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.dueDate)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                          <span className="task-priority">{formatPriority(task.priority)}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Reminder: {displayDate(task.dueDate)}</span>
+                          <span>{formatStatus(task.status)}{task.hoursRemaining != null ? ` · ${formatHoursRemaining(task.hoursRemaining)}` : ''}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No reminders for today.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -291,21 +367,33 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Upcoming Reminders</Card.Title>
-                <span className="task-count">{groups.upcomingReminders.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.upcomingReminders.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('upcomingReminders')}>
+                    {isCollapsed('upcomingReminders') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('upcomingReminders') && (
+                <Card.Body>
                 {groups.upcomingReminders.length > 0 ? (
                   <ul className="task-list">
                     {groups.upcomingReminders.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.dueDate)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                          <span className="task-priority">{formatPriority(task.priority)}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Reminder: {displayDate(task.dueDate)}</span>
+                          <span>{formatStatus(task.status)}{task.hoursRemaining != null ? ` · ${formatHoursRemaining(task.hoursRemaining)}` : ''}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No upcoming reminders.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -314,21 +402,33 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Overdue Tasks</Card.Title>
-                <span className="task-count">{groups.overdue.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.overdue.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('overdue')}>
+                    {isCollapsed('overdue') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('overdue') && (
+                <Card.Body>
                 {groups.overdue.length > 0 ? (
                   <ul className="task-list">
                     {groups.overdue.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.dueDate)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                          <span className="task-priority">{formatPriority(task.priority)}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Due: {displayDate(task.dueDate)}</span>
+                          <span>{formatStatus(task.status)}{task.hoursRemaining != null ? ` · ${formatHoursRemaining(task.hoursRemaining)}` : ''}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No overdue tasks.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -337,21 +437,33 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Tasks Due Soon</Card.Title>
-                <span className="task-count">{groups.dueSoon.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.dueSoon.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('dueSoon')}>
+                    {isCollapsed('dueSoon') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('dueSoon') && (
+                <Card.Body>
                 {groups.dueSoon.length > 0 ? (
                   <ul className="task-list">
                     {groups.dueSoon.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.dueDate)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                          <span className="task-priority">{formatPriority(task.priority)}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Due: {displayDate(task.dueDate)}</span>
+                          <span>{formatStatus(task.status)}{task.hoursRemaining != null ? ` · ${formatHoursRemaining(task.hoursRemaining)}` : ''}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No tasks due soon.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -360,21 +472,33 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Remaining Tasks</Card.Title>
-                <span className="task-count">{groups.remaining.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.remaining.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('remaining')}>
+                    {isCollapsed('remaining') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('remaining') && (
+                <Card.Body>
                 {groups.remaining.length > 0 ? (
                   <ul className="task-list">
                     {groups.remaining.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.dueDate)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                          <span className="task-priority">{formatPriority(task.priority)}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Due: {displayDate(task.dueDate)}</span>
+                          <span>{formatStatus(task.status)}{task.hoursRemaining != null ? ` · ${formatHoursRemaining(task.hoursRemaining)}` : ''}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No remaining tasks.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -383,21 +507,31 @@ function Dashboard() {
             <Card className="category-card">
               <Card.Header>
                 <Card.Title>Recently Completed Tasks</Card.Title>
-                <span className="task-count">{groups.recentlyCompleted.length} tasks</span>
+                <span className="card-header-actions">
+                  <span className="task-count">{groups.recentlyCompleted.length} tasks</span>
+                  <Button variant="link" size="sm" className="collapse-toggle" onClick={() => toggleSection('recentlyCompleted')}>
+                    {isCollapsed('recentlyCompleted') ? 'Expand' : 'Collapse'}
+                  </Button>
+                </span>
               </Card.Header>
-              <Card.Body>
+              {!isCollapsed('recentlyCompleted') && (
+                <Card.Body>
                 {groups.recentlyCompleted.length > 0 ? (
                   <ul className="task-list">
                     {groups.recentlyCompleted.map(task => (
                       <li key={task.id} className="task-item" onClick={() => openTask(task)} style={{cursor: 'pointer'}}>
-                        <span className="task-title">{task.name}</span>
-                        <span className="task-date">{displayDate(task.completedAt)}</span>
-                        <span style={{marginLeft:12}}>{task.priority}</span>
+                        <div className="task-title-group">
+                          <span className="task-title">{task.name}</span>
+                        </div>
+                        <div className="task-right-group">
+                          <span className="task-date">Completed: {displayDate(task.completedAt)}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 ) : <p className="no-tasks">No recently completed tasks.</p>}
               </Card.Body>
+              )}
             </Card>
           </Col>
         </Row>
@@ -412,7 +546,11 @@ function Dashboard() {
             <Form>
               <Form.Group className="mb-3">
                 <Form.Label>Name</Form.Label>
-                <Form.Control value={selectedTask.name} onChange={e => setSelectedTask({...selectedTask, name: e.target.value})} />
+                <Form.Control
+                  value={selectedTask.name}
+                  maxLength={100}
+                  onChange={e => setSelectedTask({...selectedTask, name: e.target.value.slice(0, 100)})}
+                />
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -421,38 +559,40 @@ function Dashboard() {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Due Date (local)</Form.Label>
-                <Form.Control type="datetime-local" value={selectedTask.dueDate ? new Date(selectedTask.dueDate).toISOString().slice(0,16) : ''} onChange={e => setSelectedTask({...selectedTask, dueDate: new Date(e.target.value)})} />
+                <Form.Label>Due Date</Form.Label>
+                <Form.Control type="datetime-local" value={selectedTask.dueDate ? formatDateTimeLocal(selectedTask.dueDate) : ''} onChange={e => setSelectedTask({...selectedTask, dueDate: new Date(e.target.value)})} />
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Priority</Form.Label>
                 <Form.Select value={selectedTask.priority} onChange={e => setSelectedTask({...selectedTask, priority: e.target.value})}>
-                  <option>Urgent</option>
-                  <option>HighPriority</option>
-                  <option>MediumPriority</option>
-                  <option>LowPriority</option>
-                  <option>Optional</option>
-                  <option>Reminder</option>
+                  <option value="Urgent">{formatPriority('Urgent')}</option>
+                  <option value="HighPriority">{formatPriority('HighPriority')}</option>
+                  <option value="MediumPriority">{formatPriority('MediumPriority')}</option>
+                  <option value="LowPriority">{formatPriority('LowPriority')}</option>
+                  <option value="Optional">{formatPriority('Optional')}</option>
+                  <option value="Reminder">{formatPriority('Reminder')}</option>
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Estimate Hours</Form.Label>
+                <Form.Label>Estimated Hours</Form.Label>
                 <Form.Control type="number" min="0" value={selectedTask.estimateHours ?? ''} onChange={e => setSelectedTask({...selectedTask, estimateHours: e.target.value ? parseInt(e.target.value,10) : null})} />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Hours Remaining</Form.Label>
-                <Form.Control type="number" min="0" value={selectedTask.hoursRemaining ?? ''} onChange={e => setSelectedTask({...selectedTask, hoursRemaining: e.target.value ? parseInt(e.target.value,10) : null})} />
-              </Form.Group>
+              {selectedTask && selectedTask.id ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>Hours Remaining</Form.Label>
+                  <Form.Control type="number" min="0" value={selectedTask.hoursRemaining ?? ''} onChange={e => setSelectedTask({...selectedTask, hoursRemaining: e.target.value ? parseInt(e.target.value,10) : null})} />
+                </Form.Group>
+              ) : null}
 
               <Form.Group className="mb-3">
                 <Form.Label>Status</Form.Label>
                 <Form.Select value={selectedTask.status} onChange={e => setSelectedTask({...selectedTask, status: e.target.value})}>
-                  <option>NotStarted</option>
-                  <option>InProgress</option>
-                  <option>Completed</option>
+                  <option value="NotStarted">{formatStatus('NotStarted')}</option>
+                  <option value="InProgress">{formatStatus('InProgress')}</option>
+                  <option value="Completed">{formatStatus('Completed')}</option>
                 </Form.Select>
               </Form.Group>
             </Form>
