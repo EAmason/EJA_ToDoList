@@ -212,8 +212,8 @@ namespace ToDoListBackend.Controllers
         {
             public int Id { get; set; }
             public int UserId { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
+            public string? Name { get; set; }
+            public string? Description { get; set; }
             public DateTime DueDate { get; set; }
             public TaskPriority Priority { get; set; }
             public int? EstimateHours { get; set; }
@@ -227,8 +227,8 @@ namespace ToDoListBackend.Controllers
         public class CreateTaskRequest
         {
             public int UserId { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
+            public string? Name { get; set; }
+            public string? Description { get; set; }
             public DateTime DueDate { get; set; }
             public TaskPriority Priority { get; set; }
             public int? EstimateHours { get; set; }
@@ -238,8 +238,8 @@ namespace ToDoListBackend.Controllers
 
         public class UpdateTaskRequest
         {
-            public string Name { get; set; }
-            public string Description { get; set; }
+            public string? Name { get; set; }
+            public string? Description { get; set; }
             public DateTime? DueDate { get; set; }
             public TaskPriority? Priority { get; set; }
             public int? EstimateHours { get; set; }

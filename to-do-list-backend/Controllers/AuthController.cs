@@ -23,7 +23,6 @@ namespace ToDoListBackend.Controllers
             _configuration = configuration;
         }
 
-        // TODO: Add other error cases for missing fields.
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
         {
@@ -71,7 +70,6 @@ namespace ToDoListBackend.Controllers
             }
         }
 
-        // TODO: Add additional error cases for missing fields and invalid credentials.
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -125,16 +123,16 @@ namespace ToDoListBackend.Controllers
 
     public class SignUpRequest
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string ConfirmPassword { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Email { get; set; }
+        public string? Password { get; set; }
+        public string? ConfirmPassword { get; set; }
     }
 
     public class LoginRequest
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string? Email { get; set; }
+        public string? Password { get; set; }
     }
 }
