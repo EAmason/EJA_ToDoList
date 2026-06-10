@@ -40,10 +40,6 @@ namespace ToDoListBackend.Tests
             var users = new List<User>();
             var mockDbSet = users.BuildMockDbSet();
             
-            //mockDbSet.Setup(m => m.AnyAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-            //    .ReturnsAsync(false);
-            //mockDbSet.Setup(m => m.Add(It.IsAny<User>())).Callback<User>(u => users.Add(u));
-            
             mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
             mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
@@ -121,11 +117,17 @@ namespace ToDoListBackend.Tests
             // Arrange
             var mockContext = CreateMockContext();
             var mockConfig = CreateMockConfiguration();
-            var mockDbSet = new Mock<DbSet<User>>();
+            var user = new User
+            {
+                Id = 1,
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john@example.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!")
+            };
             
-            mockDbSet.Setup(m => m.AnyAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-            
+            var userList = new List<User> { user };
+            var mockDbSet = userList.BuildMockDbSet();            
             mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
 
             var controller = new AuthController(mockContext.Object, mockConfig.Object);
@@ -152,6 +154,7 @@ namespace ToDoListBackend.Tests
             // Arrange
             var mockContext = CreateMockContext();
             var mockConfig = CreateMockConfiguration();
+
             var user = new User
             {
                 Id = 1,
@@ -160,11 +163,9 @@ namespace ToDoListBackend.Tests
                 Email = "john@example.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!")
             };
-            var mockDbSet = users.BuildMockDbSet();
 
-            mockDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(user);
-
+            var userList = new List<User> { user };
+            var mockDbSet = userList.BuildMockDbSet();
             mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
 
             var controller = new AuthController(mockContext.Object, mockConfig.Object);
@@ -190,11 +191,10 @@ namespace ToDoListBackend.Tests
             // Arrange
             var mockContext = CreateMockContext();
             var mockConfig = CreateMockConfiguration();
-            var mockDbSet = new Mock<DbSet<User>>();
             
-            mockDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((User)null);
-
+            // Set the User List as empty.
+            var userList = new List<User> {};
+            var mockDbSet = userList.BuildMockDbSet();
             mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
 
             var controller = new AuthController(mockContext.Object, mockConfig.Object);
@@ -226,10 +226,8 @@ namespace ToDoListBackend.Tests
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("CorrectPassword123!")
             };
 
-            var mockDbSet = new Mock<DbSet<User>>();
-            mockDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(user);
-
+            var userList = new List<User> { user };
+            var mockDbSet = userList.BuildMockDbSet();
             mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
 
             var controller = new AuthController(mockContext.Object, mockConfig.Object);

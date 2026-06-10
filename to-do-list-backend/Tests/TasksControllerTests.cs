@@ -2,6 +2,7 @@ using Xunit;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MockQueryable.Moq;
 using ToDoListBackend.Controllers;
 using ToDoListBackend.Data;
 using ToDoListBackend.Models;
@@ -46,14 +47,7 @@ namespace ToDoListBackend.Tests
                 }
             };
 
-            var mockDbSet = new Mock<DbSet<TodoTask>>();
-            var queryableData = tasks.AsQueryable();
-            
-            mockDbSet.As<IQueryable<TodoTask>>().Setup(m => m.Provider).Returns(queryableData.Provider);
-            mockDbSet.As<IQueryable<TodoTask>>().Setup(m => m.Expression).Returns(queryableData.Expression);
-            mockDbSet.As<IQueryable<TodoTask>>().Setup(m => m.ElementType).Returns(queryableData.ElementType);
-            mockDbSet.As<IQueryable<TodoTask>>().Setup(m => m.GetEnumerator()).Returns(queryableData.GetEnumerator());
-
+            var mockDbSet = tasks.BuildMockDbSet();
             mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
 
             var controller = new TasksController(mockContext.Object);
@@ -98,9 +92,17 @@ namespace ToDoListBackend.Tests
                 Status = TaskStatus.InProgress,
                 CreatedAt = DateTime.UtcNow
             };
+            
+            var tasks = new List<TodoTask> { task };
+            var mockDbSet = tasks.BuildMockDbSet();
 
-            mockContext.Setup(c => c.Tasks.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(task);
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                .Returns((object[] ids, CancellationToken token) => new ValueTask<TodoTask>(task));
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>()))
+                .ReturnsAsync((object[] ids) => task);
+
+            mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
 
             var controller = new TasksController(mockContext.Object);
 
@@ -110,6 +112,9 @@ namespace ToDoListBackend.Tests
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult.Value);
+
+            var returnedTask = Assert.IsType<TaskDto>(okResult.Value);
+            Assert.Equal("Task 1", returnedTask.Name);
         }
 
         [Fact]
@@ -254,10 +259,16 @@ namespace ToDoListBackend.Tests
                 CreatedAt = DateTime.UtcNow
             };
 
-            mockContext.Setup(c => c.Tasks.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(task);
-            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
+            var tasks = new List<TodoTask> { task };
+            var mockDbSet = tasks.BuildMockDbSet();
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                .Returns((object[] ids, CancellationToken token) => new ValueTask<TodoTask>(task));
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>()))
+                .ReturnsAsync((object[] ids) => task);
+
+            mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
 
             var controller = new TasksController(mockContext.Object);
             var request = new UpdateTaskRequest
@@ -314,9 +325,16 @@ namespace ToDoListBackend.Tests
                 CreatedAt = DateTime.UtcNow
             };
 
-            mockContext.Setup(c => c.Tasks.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(task);
+            var tasks = new List<TodoTask> { task };
+            var mockDbSet = tasks.BuildMockDbSet();
 
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                .Returns((object[] ids, CancellationToken token) => new ValueTask<TodoTask>(task));
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>()))
+                .ReturnsAsync((object[] ids) => task);
+
+            mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
             var controller = new TasksController(mockContext.Object);
             var request = new UpdateTaskRequest
             {
@@ -345,8 +363,18 @@ namespace ToDoListBackend.Tests
                 CompletedAt = null
             };
 
-            mockContext.Setup(c => c.Tasks.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(task);
+            var tasks = new List<TodoTask> { task };
+            var mockDbSet = tasks.BuildMockDbSet();
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                .Returns((object[] ids, CancellationToken token) => new ValueTask<TodoTask>(task));
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>()))
+                .ReturnsAsync((object[] ids) => task);
+
+            mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
+
+            mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
             mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
@@ -378,10 +406,11 @@ namespace ToDoListBackend.Tests
                 CreatedAt = DateTime.UtcNow
             };
 
-            var mockDbSet = new Mock<DbSet<TodoTask>>();
-            mockDbSet.Setup(m => m.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(task);
-            mockDbSet.Setup(m => m.Remove(It.IsAny<TodoTask>()));
+            var tasks = new List<TodoTask> { task };
+            var mockDbSet = tasks.BuildMockDbSet();
+
+            mockDbSet.Setup(x => x.FindAsync(It.IsAny<object[]>()))
+                .ReturnsAsync((object[] ids) => tasks.FirstOrDefault(x => x.Id == (int)ids[0]));
 
             mockContext.Setup(c => c.Tasks).Returns(mockDbSet.Object);
             mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
